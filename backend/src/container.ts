@@ -10,6 +10,9 @@ import type { IAuthLogic } from './modules/auth/IAuthLogic.js';
 import { EntriesHandler } from './modules/entries/EntriesHandler.js';
 import { EntriesLogic } from './modules/entries/EntriesLogic.js';
 import type { IEntriesLogic } from './modules/entries/IEntriesLogic.js';
+import { TargetsHandler } from './modules/targets/TargetsHandler.js';
+import { TargetsLogic } from './modules/targets/TargetsLogic.js';
+import type { ITargetsLogic } from './modules/targets/ITargetsLogic.js';
 
 export const clock: IClock = new SystemClock();
 export const tokenLogic: ITokenLogic = new JwtTokenLogic(config.jwt);
@@ -17,6 +20,8 @@ export const authenticate = createAuthenticate(tokenLogic);
 
 export const authLogic: IAuthLogic = new AuthLogic(prisma, tokenLogic);
 export const entriesLogic: IEntriesLogic = new EntriesLogic(prisma, clock);
+export const targetsLogic: ITargetsLogic = new TargetsLogic(prisma, clock);
 
 export const authHandler = new AuthHandler(authLogic, authenticate);
 export const entriesHandler = new EntriesHandler(entriesLogic);
+export const targetsHandler = new TargetsHandler(targetsLogic, clock);
