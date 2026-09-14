@@ -14,6 +14,8 @@ import type { IExtractLogic } from './modules/ai/IExtractLogic.js';
 import { AuthHandler } from './modules/auth/AuthHandler.js';
 import { AuthLogic } from './modules/auth/AuthLogic.js';
 import type { IAuthLogic } from './modules/auth/IAuthLogic.js';
+import { RecommendLogic } from './modules/chat/recommend/RecommendLogic.js';
+import type { IRecommendLogic } from './modules/chat/recommend/IRecommendLogic.js';
 import { EntriesHandler } from './modules/entries/EntriesHandler.js';
 import { EntriesLogic } from './modules/entries/EntriesLogic.js';
 import type { IEntriesLogic } from './modules/entries/IEntriesLogic.js';
@@ -53,6 +55,10 @@ export const reportPdfLogic: IReportPdfLogic = new ReportPdfLogic(
 );
 export const importsLogic: IImportsLogic = new ImportsLogic(entriesLogic, diaryParsers);
 export const extractLogic: IExtractLogic = new ExtractLogic(visionChatProvider, config.ai);
+export const recommendLogic: IRecommendLogic = new RecommendLogic(
+  entriesLogic,
+  targetsLogic,
+);
 
 export const aiHandler = new AiHandler(extractLogic, geminiChatProvider);
 export const authHandler = new AuthHandler(authLogic, authenticate);
