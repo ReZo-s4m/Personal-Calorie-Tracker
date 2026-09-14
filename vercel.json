@@ -5,7 +5,8 @@
     },
     "backend": {
       "root": "backend/",
-      "framework": "express"
+      "runtime": "container",
+      "entrypoint": "Dockerfile"
     }
   },
   "rewrites": [
