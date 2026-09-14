@@ -17,6 +17,19 @@ import type { IAuthLogic } from './modules/auth/IAuthLogic.js';
 import { PendingLogic } from './modules/chat/pending/PendingLogic.js';
 import { RecommendLogic } from './modules/chat/recommend/RecommendLogic.js';
 import type { IRecommendLogic } from './modules/chat/recommend/IRecommendLogic.js';
+import { ChatTools } from './modules/chat/tools/ChatTools.js';
+import { TargetResolver } from './modules/chat/tools/TargetResolver.js';
+import { DeleteEntryTool } from './modules/chat/tools/DeleteEntryTool.js';
+import { FindEntriesTool } from './modules/chat/tools/FindEntriesTool.js';
+import { GenerateReportPdfTool } from './modules/chat/tools/GenerateReportPdfTool.js';
+import { GetGoalTool } from './modules/chat/tools/GetGoalTool.js';
+import { GetRemainingTool } from './modules/chat/tools/GetRemainingTool.js';
+import { GetSummaryTool } from './modules/chat/tools/GetSummaryTool.js';
+import { GetWeightTool } from './modules/chat/tools/GetWeightTool.js';
+import { LogMealTool } from './modules/chat/tools/LogMealTool.js';
+import { RecommendMealTool } from './modules/chat/tools/RecommendMealTool.js';
+import { SetGoalTool } from './modules/chat/tools/SetGoalTool.js';
+import { UpdateEntryTool } from './modules/chat/tools/UpdateEntryTool.js';
 import { EntriesHandler } from './modules/entries/EntriesHandler.js';
 import { EntriesLogic } from './modules/entries/EntriesLogic.js';
 import type { IEntriesLogic } from './modules/entries/IEntriesLogic.js';
@@ -61,6 +74,21 @@ export const recommendLogic: IRecommendLogic = new RecommendLogic(
   targetsLogic,
 );
 export const pendingLogic = new PendingLogic(entriesLogic);
+const targetResolver = new TargetResolver(pendingLogic);
+
+export const chatTools = new ChatTools([
+  new LogMealTool(entriesLogic),
+  new FindEntriesTool(entriesLogic),
+  new UpdateEntryTool(entriesLogic, targetResolver),
+  new DeleteEntryTool(entriesLogic, targetResolver),
+  new GetGoalTool(targetsLogic),
+  new SetGoalTool(targetsLogic),
+  new GetSummaryTool(reportsLogic),
+  new GetRemainingTool(recommendLogic),
+  new GetWeightTool(weightsLogic, targetsLogic),
+  new GenerateReportPdfTool(reportPdfLogic),
+  new RecommendMealTool(recommendLogic),
+]);
 
 export const aiHandler = new AiHandler(extractLogic, geminiChatProvider);
 export const authHandler = new AuthHandler(authLogic, authenticate);
