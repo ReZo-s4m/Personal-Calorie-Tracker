@@ -14,6 +14,9 @@ import type { IExtractLogic } from './modules/ai/IExtractLogic.js';
 import { AuthHandler } from './modules/auth/AuthHandler.js';
 import { AuthLogic } from './modules/auth/AuthLogic.js';
 import type { IAuthLogic } from './modules/auth/IAuthLogic.js';
+import { ChatHandler } from './modules/chat/ChatHandler.js';
+import { ChatLogic } from './modules/chat/ChatLogic.js';
+import type { IChatLogic } from './modules/chat/IChatLogic.js';
 import { AttachmentsLogic } from './modules/chat/attachments/AttachmentsLogic.js';
 import { PendingLogic } from './modules/chat/pending/PendingLogic.js';
 import { RecommendLogic } from './modules/chat/recommend/RecommendLogic.js';
@@ -98,8 +101,17 @@ export const attachmentsLogic = new AttachmentsLogic(
   geminiChatProvider,
 );
 
+export const chatLogic: IChatLogic = new ChatLogic(
+  geminiChatProvider,
+  chatTools,
+  pendingLogic,
+  attachmentsLogic,
+  authLogic,
+);
+
 export const aiHandler = new AiHandler(extractLogic, geminiChatProvider);
 export const authHandler = new AuthHandler(authLogic, authenticate);
+export const chatHandler = new ChatHandler(chatLogic);
 export const entriesHandler = new EntriesHandler(entriesLogic);
 export const targetsHandler = new TargetsHandler(targetsLogic, clock);
 export const importsHandler = new ImportsHandler(importsLogic);
