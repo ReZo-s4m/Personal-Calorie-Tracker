@@ -2,8 +2,7 @@
 
 A multi-user web app for logging meals, setting calorie/macro targets, recording weight, and viewing reports. The UI is Next.js. The API is Express. Data is PostgreSQL.
 
-Live: https://calorie-tracker-ochre-eight.vercel.app  
-Demo: https://youtu.be/ZUAhar1ciLc
+Live: https://my-nutriai.vercel.app/
 
 ---
 
@@ -23,6 +22,8 @@ From Neon, copy:
 Both should end with `?sslmode=require`.
 
 Optional: a [Gemini API key](https://aistudio.google.com/apikey) if you want photo scan, Ask AI, and PDF Deep Analyse. Without it, those three calls return 503 and the rest of the app still runs.
+
+Optional: SMTP settings if you want forgot-password codes delivered to the registered inbox (Gmail App Password is enough). Without them the API still issues a code, but it is printed in the API terminal instead of emailed.
 
 ### 1. Start the API
 
@@ -129,7 +130,7 @@ These are product rules I treated as given while building, not extra features.
 9. **Photo and PDF do not auto-save.** They produce a draft. The user reviews it, then confirms. Only then is a meal row written.
 10. **PDF import** tries a local table parser first. Gemini Deep Analyse is opt-in.
 11. **Ask AI can write** meals and targets, but destructive or ambiguous edits go through a confirm step.
-12. **Forgot password** sends an OTP through a console email adapter in this project (no SMTP provider wired). Check the API logs for the code when running locally.
+12. **Forgot password** emails a 6-digit OTP when `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS` are set (Gmail App Password works). If they are unset, the code is printed in the API log instead. The HTTP response never includes the code.
 
 ---
 
