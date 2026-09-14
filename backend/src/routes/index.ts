@@ -1,6 +1,7 @@
 ﻿import { Router } from 'express';
 import { rateLimit } from '../middleware/rate-limit.js';
 import {
+  aiHandler,
   authHandler,
   authenticate,
   entriesHandler,
@@ -20,3 +21,10 @@ apiRouter.use('/auth', authHandler.routes());
 apiRouter.use('/entries', authenticate, entriesHandler.routes());
 apiRouter.use('/goals', authenticate, targetsHandler.routes());
 apiRouter.use('/weights', authenticate, weightsHandler.routes());
+
+apiRouter.use(
+  '/ai',
+  authenticate,
+  rateLimit({ name: 'ai', max: 20, windowMs: 60_000 }),
+  aiHandler.routes(),
+);
