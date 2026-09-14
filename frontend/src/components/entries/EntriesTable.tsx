@@ -3,7 +3,6 @@
 import { Badge, Button } from '@/components/ui';
 import { formatCalories, formatClock, formatDateKey, formatGrams } from '@/lib/format';
 import { MEAL_LABELS, type FoodEntry } from '@/lib/types';
-import { SourceBadge } from './SourceBadge';
 
 interface EntriesTableProps {
   entries: FoodEntry[];
@@ -23,7 +22,6 @@ export function EntriesTable({ entries, deletingId, onEdit, onDelete }: EntriesT
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate text-sm font-medium">{entry.foodName}</p>
                   <Badge>{MEAL_LABELS[entry.mealType]}</Badge>
-                  <SourceBadge source={entry.source} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
                   {formatDateKey(entry.consumedOn)} at {formatClock(entry.consumedAt)} · {entry.quantity}{' '}
@@ -70,7 +68,6 @@ export function EntriesTable({ entries, deletingId, onEdit, onDelete }: EntriesT
               <th className="pb-3 text-right font-medium">Carbs (g)</th>
               <th className="pb-3 text-right font-medium">Fat (g)</th>
               <th className="px-3 pb-3 text-center font-medium">Micros</th>
-              <th className="px-3 pb-3 font-medium">Source</th>
               <th className="pb-3" />
             </tr>
           </thead>
@@ -99,9 +96,6 @@ export function EntriesTable({ entries, deletingId, onEdit, onDelete }: EntriesT
                   title={entry.micronutrients.map((micro) => `${micro.label}: ${micro.amount}${micro.unit}`).join(', ')}
                 >
                   {entry.micronutrients.length || '—'}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
-                  <SourceBadge source={entry.source} />
                 </td>
                 <td className="py-3 text-right whitespace-nowrap">
                   <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => onEdit(entry)}>

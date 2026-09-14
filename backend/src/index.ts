@@ -6,6 +6,11 @@ const app = createApp();
 const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`API listening on port ${config.port} (${config.nodeEnv})`);
   console.log(`Database ${config.databaseLabel}`);
+  console.log(
+    config.smtp.isConfigured
+      ? `Password reset email via SMTP ${config.smtp.host}`
+      : 'Password reset email via console (set SMTP_HOST/SMTP_USER/SMTP_PASS to send mail)',
+  );
   if (
     config.isProduction &&
     config.corsOrigins.every((origin) => origin === 'http://localhost:3000')

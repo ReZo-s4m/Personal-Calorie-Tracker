@@ -1,44 +1,174 @@
-# Personal Calorie Tracker
-
-A multi-user web app for logging meals, setting calorie/macro targets, recording weight, and viewing reports. The UI is Next.js. The API is Express. Data is PostgreSQL.
+# NutriAI — Personal Calorie Tracker
 
 Live: https://my-nutriai.vercel.app/
 
+A private food diary. Log meals by hand, from a photo, from a PDF, or by asking Ask AI. Set calorie and macro targets, record weigh-ins, and read daily/weekly reports.
+
+The browser talks only to Next.js. Next.js proxies `/api` to Express. Express is the only process that touches Postgres.
+
 ---
 
-## How to set up and run
+## Features
 
-### What you need
+| | |
+| --- | --- |
+| **Accounts** | Sign up, log in, and reset a forgotten password (email OTP). Every row belongs to one user. |
+| **Today** | Dashboard of today’s calories and macros against the current target. |
+| **Log a meal** | Name, quantity, unit, calories, macros, and optional micronutrients. Breakfast, lunch, dinner, or snacks. |
+| **Photo extract** | A plate or nutrition label drafts the entry. You confirm before anything is written. |
+| **Diary** | List meals by date range, search, sort, edit, and delete. |
+| **Targets** | Daily calories plus protein / carbs / fat, optional goal weight. Versioned by date so past reports use the target that was in force then. |
+| **Weigh-ins** | One reading per calendar day. Saving again that day replaces it. |
+| **Reports** | Daily and weekly totals, macro split, micronutrients, target vs actual, and a downloadable PDF. |
+| **PDF import** | Drop a food-diary PDF, review parsed rows, then commit. A local parser runs first; Gemini only if you ask for Deep Analyse. |
+| **Ask AI** | Log, edit, or delete meals, attach a photo or PDF, set a target, or ask for a report in ordinary words. Writes wait for confirmation. |
+
+---
+
+## Stack
+
+| Layer | |
+| --- | --- |
+| Web | Next.js 16 (App Router), React 19, Tailwind 4 |
+| API | Node 20, Express 5, TypeScript |
+| Data | PostgreSQL via Prisma 6 (Neon in production) |
+| Auth | JWT bearer tokens, bcrypt password hashes |
+| AI | Gemini for Ask AI, photo extract, and PDF Deep Analyse (optional OpenAI fallback for extract) |
+| Tests | `node:test` (unit + API) and Playwright (e2e) |
+
+AI keys are optional. If they are unset, those endpoints return 503 and the rest of the app still works.
+
+---
+
+## Repository layout
+
+```
+backend/     Express API  (port 4000)
+frontend/    Next.js app  (port 3000)
+vercel.json  Vercel Services: frontend at /, API at /api
+```
+
+`frontend/` never imports `backend/` code. HTTP under `/api` is the only coupling.
+
+---
+
+## API
+
+Base path `/api`. `GET /api/health`, signup, login, and password-reset routes are public. Everything else needs `Authorization: Bearer <token>`.
+
+**Health**
+
+- `GET /api/health` — liveness
+
+**Auth**
+
+- `POST /api/auth/signup` — create an account, return a JWT
+- `POST /api/auth/login` — sign in, return a JWT
+- `POST /api/auth/forgot-password` — send (or log) a one-time code
+- `POST /api/auth/verify-otp` — check the code
+- `POST /api/auth/reset-password` — set a new password
+- `GET /api/auth/me` — current user (auth)
+
+**Entries**
+
+- `GET /api/entries` — list meals (date range, filters, pagination)
+- `POST /api/entries` — create one meal
+- `POST /api/entries/batch` — create several meals (import / Ask AI)
+- `GET /api/entries/:id` — one meal
+- `PATCH /api/entries/:id` — edit a meal
+- `DELETE /api/entries/:id` — delete a meal
+
+**Goals** *(handled by the targets module)*
+
+- `GET /api/goals/current` — target in force for a date (today if omitted)
+- `GET /api/goals` — target history
+- `POST /api/goals` — set or replace the target for `effectiveFrom`
+- `DELETE /api/goals/:id` — remove a target version
+
+**Weights**
+
+- `GET /api/weights/current` — latest weigh-in
+- `GET /api/weights` — history
+- `POST /api/weights` — log a weigh-in (same calendar day replaces)
+- `DELETE /api/weights/:id` — delete a weigh-in
+
+**Reports**
+
+- `GET /api/reports/daily` — per-day totals
+- `GET /api/reports/weekly` — weekly totals
+- `GET /api/reports/macros` — macro split
+- `GET /api/reports/micronutrients` — micronutrient totals
+- `GET /api/reports/goal-comparison` — intake vs the target in force each day
+- `GET /api/reports/pdf` — the same numbers as a downloadable PDF
+
+**Imports**
+
+- `GET /api/imports/status` — whether Deep Analyse is configured
+- `POST /api/imports/parse` — draft rows from a PDF (writes nothing)
+- `POST /api/imports/commit` — save reviewed rows
+
+**AI**
+
+- `GET /api/ai/status` — whether extract and chat are configured
+- `POST /api/ai/extract` — photo extract (plate or label)
+- `POST /api/ai/chat` — Ask AI
+
+---
+
+## Prerequisites
 
 - Node.js 20 or newer
-- A PostgreSQL database. [Neon](https://console.neon.tech) works (create a project, skip Neon Auth)
-- Two terminals (API and web run as separate processes)
+- npm
+- A PostgreSQL database you can reach (Neon is what production uses)
 
-From Neon, copy:
+---
 
-- **Pooled** connection string → `DATABASE_URL`
-- **Direct** connection string → `DIRECT_URL`
+## 1. Database
 
-Both should end with `?sslmode=require`.
+**Option A — Neon (recommended)**
 
-Optional: a [Gemini API key](https://aistudio.google.com/apikey) if you want photo scan, Ask AI, and PDF Deep Analyse. Without it, those three calls return 503 and the rest of the app still runs.
+1. Create a project at [neon.tech](https://neon.tech). Skip Neon Auth.
+2. Copy both connection strings, each ending `?sslmode=require`:
+   - pooled URI → `DATABASE_URL`
+   - direct URI → `DIRECT_URL`
 
-Optional: SMTP settings if you want forgot-password codes delivered to the registered inbox (Gmail App Password is enough). Without them the API still issues a code, but it is printed in the API terminal instead of emailed.
+**Option B — local Docker**
 
-### 1. Start the API
+```bash
+docker run -d --name ct-postgres \
+  -e POSTGRES_USER=test \
+  -e POSTGRES_PASSWORD=test \
+  -e POSTGRES_DB=calorie_tracker_test \
+  -p 55432:5432 postgres:16
+```
+
+Then use:
+
+```
+DATABASE_URL="postgresql://test:test@localhost:55432/calorie_tracker_test"
+DIRECT_URL="postgresql://test:test@localhost:55432/calorie_tracker_test"
+```
+
+---
+
+## 2. API
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Edit `backend/.env` and set at least:
+Edit `.env`:
 
-```
-DATABASE_URL="postgresql://.../?sslmode=require"
-DIRECT_URL="postgresql://.../?sslmode=require"
-JWT_SECRET="a long random string, 32+ characters"
-```
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Pooled Postgres URI |
+| `DIRECT_URL` | yes | Direct Postgres URI (Prisma migrations) |
+| `JWT_SECRET` | yes | At least 32 characters |
+| `CORS_ORIGIN` | no | Defaults to `http://localhost:3000` |
+| `GEMINI_API_KEY` | no | Ask AI, photo extract, PDF Deep Analyse |
+| `AI_API_KEY` | no | OpenAI-compatible fallback for photo extract |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | no | Forgot-password email. Without them, the OTP is printed in the API log. |
 
 Then:
 
@@ -49,110 +179,83 @@ npx prisma migrate deploy
 npm run dev
 ```
 
-The API is at http://127.0.0.1:4000. Check it with http://127.0.0.1:4000/api/health.
+The API listens on [http://localhost:4000](http://localhost:4000). Health check: [http://localhost:4000/api/health](http://localhost:4000/api/health).
 
-Leave this terminal running.
+---
 
-### 2. Start the web app
+## 3. Web app
 
-Open a **second** terminal:
+In a second terminal:
 
 ```bash
 cd frontend
 cp .env.example .env.local
 npm install
+npm run dev
 ```
 
-`frontend/.env.local` can stay as:
+`.env.local` should keep:
 
 ```
 NEXT_PUBLIC_API_URL=/api
 ```
 
-Next.js will proxy `/api` to the Express process on port 4000.
+Next.js rewrites `/api/*` to `http://127.0.0.1:4000` in development, so the browser stays same-origin.
 
-If you already ran the API in this same terminal, `PORT` may still be `4000`. Next must not use that port.
+Open [http://localhost:3000](http://localhost:3000), sign up, set a daily target, and log a meal.
 
-**PowerShell (Windows):**
+If Next fails to bind port 3000, another process is using it, or `PORT=4000` leaked into the shell from the API `.env`. Unset `PORT` before `npm run dev` in `frontend/`.
 
-```powershell
-if ($env:PORT) { Remove-Item Env:PORT }
-npm run dev
-```
+---
 
-**bash / macOS / Linux:**
+## Tests
 
-```bash
-unset PORT
-npm run dev
-```
-
-Open http://localhost:3000 → **Sign up** → set a Target → **Add Meal**.
-
-### Quick check that it works
-
-1. Create an account
-2. Open Target and save daily calories + protein / carbs / fat
-3. Open Add Meal, enter a food, save
-4. Overview should show that meal against the target
-5. Food Log should list it; you can edit or delete it
-
-### Tests (optional)
-
-API unit tests + HTTP tests (uses `DATABASE_URL` in `backend/.env`):
+From the repo root (after both packages are installed and `backend/.env` has a Postgres URI):
 
 ```bash
-npm test --prefix backend
+npm test              # unit + API
+npm run test:unit     # no database
+npm run test:api      # needs Postgres; runs migrations first
+npm run test:e2e      # Playwright; starts API + web if they are not already running
 ```
 
-Browser tests (both servers must already be running):
+Or from each package:
 
 ```bash
-cd frontend
-npx playwright install chromium
-npm run test:e2e
+cd backend && npm test
+cd frontend && npx playwright install && npm run test:e2e
 ```
+
+---
+
+## Production (Vercel)
+
+Frontend and API deploy together as [Vercel Services](https://vercel.com/docs/services). `vercel.json` routes `/` to Next.js and `/api` to Express. Postgres stays on Neon.
+
+Set these in the Vercel project (Production and Preview):
+
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_API_URL` | `/api` |
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Neon pooled URI |
+| `DIRECT_URL` | Neon direct URI |
+| `JWT_SECRET` | 32+ random characters |
+| `GEMINI_API_KEY` | optional |
+
+Turn **Deployment Protection** off on production, or visitors see Vercel’s login instead of this app’s.
 
 ---
 
 ## Assumptions
 
-These are product rules I treated as given while building, not extra features.
-
-1. **Two processes.** The frontend never imports backend code. The only coupling is HTTP under `/api`.
-2. **Users are isolated.** After signup/login, every meal, target, and weigh-in is scoped to that account. Another account cannot read them.
-3. **Meal types** are breakfast, lunch, dinner, and snacks.
-4. **A day** is the user’s local calendar date (`YYYY-MM-DD`), not the server’s UTC day.
-5. **Targets are versioned** by `effectiveFrom`. Saving again on the same date replaces that version, so an old report still compares against the targets that applied on that day.
-6. **One weigh-in per calendar day.** Saving again that day replaces the previous reading.
-7. **Micronutrients** are an open list of named amounts (not a fixed set of database columns).
-8. **AI is optional.** Photo extract, Ask AI, and PDF Deep Analyse need `GEMINI_API_KEY` (photo extract can use `AI_API_KEY` / OpenAI if Gemini is unset). If neither key is set, those endpoints return 503; logging, targets, weight, and reports still work.
-9. **Photo and PDF do not auto-save.** They produce a draft. The user reviews it, then confirms. Only then is a meal row written.
-10. **PDF import** tries a local table parser first. Gemini Deep Analyse is opt-in.
-11. **Ask AI can write** meals and targets, but destructive or ambiguous edits go through a confirm step.
-12. **Forgot password** emails a 6-digit OTP when `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS` are set (Gmail App Password works). If they are unset, the code is printed in the API log instead. The HTTP response never includes the code.
-
----
-
-## Repo layout (for running the right folder)
-
-| Path | What to run |
-| --- | --- |
-| `backend/` | `npm run dev` — Express API, Prisma, Postgres |
-| `frontend/` | `npm run dev` — Next.js UI |
-
----
-
-## Production (already deployed)
-
-| Part | Host | Root directory |
-| --- | --- | --- |
-| Web | Vercel | `frontend` |
-| API | Render | `backend` |
-| Database | Neon | — |
-
-On a free Render instance, the first request after idle can take about a minute.
-
-Do not create a Render database. Put secrets in the Vercel/Render dashboards. Names match `backend/.env.example` and `frontend/.env.example`. Do not set `PORT` on Render.
-
-Vercel: `NEXT_PUBLIC_API_URL=/api` and `API_UPSTREAM=https://<your-render-host>` (no trailing slash, no `/api` on `API_UPSTREAM`). Redeploy after changing them. Turn off Vercel Deployment Protection on production so visitors see this app’s login page.
+- Meal types are breakfast, lunch, dinner, and snacks.
+- A calendar day is the user’s local day (`YYYY-MM-DD`), not the API host’s UTC day. Stored `consumedOn` / `loggedOn` values are midnight UTC of that local day.
+- Targets are versioned by `effectiveFrom`. Saving again on the same date replaces that version; earlier versions stay so historical reports stay honest.
+- One weigh-in per calendar day; saving again that day replaces it.
+- Micronutrients are an open-ended list of named amounts, not fixed columns.
+- Photo extract and PDF import create drafts. Nothing is written until the user confirms.
+- PDF import tries a local table parser first. Deep Analyse (Gemini) is optional.
+- Ask AI can log, edit, and delete meals after confirmation. The frontend never imports backend code; `/api` is the only coupling.
+- The HTTP API still uses `/api/goals` and field names such as `targetWeightKg`. Domain tables are `Target`, `DietEntry`, and `WeighIn`; handlers map between the two.
+- Source (manual / image / chat / pdf) is stored on each meal for the API, but it is not shown in the diary UI.

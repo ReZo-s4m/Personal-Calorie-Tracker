@@ -7,7 +7,6 @@ import { NutritionMacroCard } from '@/components/ui/animated-dashboard-card';
 import { useTodayMotion } from '@/components/dashboard/useTodayMotion';
 import { EntryFormModal } from '@/components/entries/EntryFormModal';
 import { WeeklyIntakeChart } from '@/components/dashboard/WeeklyIntakeChart';
-import { SourceBadge } from '@/components/entries/SourceBadge';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Alert, Button, Skeleton, cx } from '@/components/ui';
 import { useAsync } from '@/hooks/useAsync';
@@ -282,7 +281,6 @@ export default function DashboardPage() {
                                   <p className="shrink-0 text-sm font-bold tabular-nums">{formatCalories(entry.calories)}</p>
                                 </div>
                                 <div className="mt-1 flex items-center gap-2">
-                                  <SourceBadge source={entry.source} />
                                   <span className="text-xs text-subtle">
                                     {entry.quantity} {entry.unit}
                                   </span>

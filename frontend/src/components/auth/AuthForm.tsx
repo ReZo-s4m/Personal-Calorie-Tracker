@@ -10,9 +10,10 @@ import { Alert, Button, Field, Input } from '@/components/ui';
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
+  passwordUpdated?: boolean;
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ mode, passwordUpdated = false }: AuthFormProps) {
   const router = useRouter();
   const { login, signup, user, isLoading } = useAuth();
   const isSignup = mode === 'signup';
@@ -74,6 +75,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="mt-7 flex flex-col gap-4">
+          {passwordUpdated && !bannerError && (
+            <Alert tone="info">Password updated. Sign in with the new one.</Alert>
+          )}
           {bannerError && <Alert>{bannerError}</Alert>}
 
           {isSignup && (

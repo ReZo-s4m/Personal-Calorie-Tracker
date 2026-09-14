@@ -9,7 +9,7 @@ loadEnv({ path: path.join(root, '.env') });
 const databaseUrl = process.env.DATABASE_URL ?? '';
 if (!databaseUrl.startsWith('postgres')) {
   console.error(
-    'API tests need a Postgres DATABASE_URL. Paste the Neon pooled URI into backend/.env, then retry.',
+    'API tests need a Postgres DATABASE_URL. Paste the Neon pooled URI into server/.env, then retry.',
   );
   process.exit(1);
 }

@@ -102,6 +102,19 @@ const geminiModels = [geminiModel, ...geminiFallbacks].filter(
   (model, index, all) => model.length > 0 && all.indexOf(model) === index,
 );
 
+const smtpHost = optional('SMTP_HOST', '');
+const smtpUser = optional('SMTP_USER', '');
+const smtpPass = optional('SMTP_PASS', '');
+const smtpFrom = optional('SMTP_FROM', smtpUser ? `NutriAI <${smtpUser}>` : '');
+const smtpPort = port('SMTP_PORT', 587);
+const smtpConfigured = Boolean(smtpHost && smtpUser && smtpPass);
+
+if ((smtpHost || smtpUser || smtpPass) && !smtpConfigured) {
+  console.warn(
+    'SMTP is incomplete (need SMTP_HOST, SMTP_USER and SMTP_PASS). Password reset codes will go to the API log until all three are set.',
+  );
+}
+
 if (problems.length > 0) {
   throw new ConfigError(problems);
 }
@@ -147,8 +160,17 @@ export const config = {
     baseUrl: geminiBaseUrl,
     isConfigured: geminiApiKey.length > 0,
   },
+  smtp: {
+    host: smtpHost,
+    port: smtpPort,
+    user: smtpUser,
+    pass: smtpPass,
+    from: smtpFrom,
+    isConfigured: smtpConfigured,
+  },
 } as const;
 
 export type AppConfig = typeof config;
 export type AiConfig = AppConfig['ai'];
 export type GeminiConfig = AppConfig['gemini'];
+export type SmtpConfig = AppConfig['smtp'];

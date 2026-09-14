@@ -3,7 +3,7 @@ import { SystemClock, type IClock } from './common/clock.js';
 import { prisma } from './common/prisma.js';
 import type { ITokenLogic } from './common/security/ITokenLogic.js';
 import { JwtTokenLogic } from './common/security/JwtTokenLogic.js';
-import { ConsoleEmailLogic } from './common/email/ConsoleEmailLogic.js';
+import { createEmailLogic } from './common/email/createEmailLogic.js';
 import type { IEmailLogic } from './common/email/IEmailLogic.js';
 import { createAuthenticate } from './middleware/auth.js';
 
@@ -69,7 +69,7 @@ import type { IWeightsLogic } from './modules/weights/IWeightsLogic.js';
 // ---- infrastructure ----------------------------------------------------
 export const clock: IClock = new SystemClock();
 export const tokenLogic: ITokenLogic = new JwtTokenLogic(config.jwt);
-export const emailLogic: IEmailLogic = new ConsoleEmailLogic();
+export const emailLogic: IEmailLogic = createEmailLogic(config);
 
 /** Bearer-token filter, applied where routers are mounted. */
 export const authenticate = createAuthenticate(tokenLogic);

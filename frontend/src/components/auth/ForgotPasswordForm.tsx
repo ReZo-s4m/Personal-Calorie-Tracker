@@ -18,7 +18,9 @@ export function ForgotPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<ApiError | Error | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const fieldError = (field: string) =>
     error instanceof ApiError ? error.fieldError(field) : undefined;
@@ -29,24 +31,42 @@ export function ForgotPasswordForm() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    setInfo(null);
     setIsSubmitting(true);
 
     try {
       if (step === 'email') {
         await api.auth.forgotPassword({ email });
         setStep('otp');
+        setInfo('If that email is registered, a 6-digit code is on its way. Check the inbox and spam folder.');
       } else if (step === 'otp') {
         await api.auth.verifyOtp({ email, code });
         setStep('password');
       } else {
         await api.auth.resetPassword({ email, code, password, confirmPassword });
-        router.replace('/login');
+        router.replace('/login?reset=1');
         return;
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught : new Error('Something went wrong.'));
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function resendCode() {
+    setError(null);
+    setInfo(null);
+    setIsResending(true);
+
+    try {
+      await api.auth.forgotPassword({ email });
+      setCode('');
+      setInfo('A new code was sent. The previous one no longer works.');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught : new Error('Something went wrong.'));
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -62,7 +82,7 @@ export function ForgotPasswordForm() {
         ? {
             kicker: 'Reset',
             title: 'Enter the code',
-            body: 'Enter the 6-digit code sent to that email.',
+            body: `Enter the 6-digit code sent to ${email}.`,
             submit: 'Verify code',
           }
         : {
@@ -86,6 +106,7 @@ export function ForgotPasswordForm() {
         <p className="mt-2 text-sm leading-relaxed text-muted">{copy.body}</p>
 
         <form onSubmit={handleSubmit} noValidate className="mt-7 flex flex-col gap-4">
+          {info && <Alert tone="info">{info}</Alert>}
           {bannerError && <Alert>{bannerError}</Alert>}
 
           {step === 'email' && (
@@ -169,10 +190,41 @@ export function ForgotPasswordForm() {
             </>
           )}
 
-          <Button type="submit" isLoading={isSubmitting} className="mt-1 h-11 w-full">
+          <Button
+            type="submit"
+            isLoading={isSubmitting}
+            disabled={step === 'otp' && code.length !== 6}
+            className="mt-1 h-11 w-full"
+          >
             {copy.submit}
           </Button>
         </form>
+
+        {step === 'otp' && (
+          <p className="mt-4 text-sm text-muted">
+            <button
+              type="button"
+              className="font-medium text-accent hover:underline disabled:opacity-60"
+              disabled={isResending}
+              onClick={() => void resendCode()}
+            >
+              {isResending ? 'Sending…' : 'Resend code'}
+            </button>
+            {' · '}
+            <button
+              type="button"
+              className="font-medium text-accent hover:underline"
+              onClick={() => {
+                setStep('email');
+                setCode('');
+                setError(null);
+                setInfo(null);
+              }}
+            >
+              Use a different email
+            </button>
+          </p>
+        )}
 
         <p className="mt-6 text-sm text-muted">
           Remembered it?{' '}
