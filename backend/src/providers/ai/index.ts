@@ -19,5 +19,5 @@ export const visionChatProvider: IChatProvider = config.gemini.isConfigured
   ? geminiChatProvider
   : new OpenAiChatProvider(config.ai);
 
-/** Deep Analyse: reads a whole PDF diary. */
+/** Deep Dive: reads a whole PDF diary. */
 export const geminiDocumentProvider: IDocumentProvider = new GeminiDocumentProvider(config.gemini);

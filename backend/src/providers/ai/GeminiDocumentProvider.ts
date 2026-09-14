@@ -14,7 +14,7 @@ export class GeminiDocumentProvider extends GeminiProviderBase implements IDocum
 
   async extractJson(request: DocumentRequest): Promise<string> {
     this.ensureConfigured(
-      'Deep Analyse is not configured. Set GEMINI_API_KEY to enable it. The script parse still works without it.',
+      'Deep Dive is not configured. Set GEMINI_API_KEY to enable it. The script parse still works without it.',
     );
 
     const last = await this.tryModels(async (model) => {

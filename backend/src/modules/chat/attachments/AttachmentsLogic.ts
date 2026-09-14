@@ -105,7 +105,7 @@ export class AttachmentsLogic {
       if (preview.rows.length === 0) {
         throw badRequest(
           preview.notes ||
-            'I could not read any diary rows from that PDF. Try the Bulk import page if you want a deep analyse.',
+            'I could not read any diary rows from that PDF. Try the Upload page if you want Deep Dive.',
         );
       }
 

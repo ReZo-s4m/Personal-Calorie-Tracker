@@ -102,7 +102,7 @@ export function ImportFileRail({
   method,
   summary,
   deepAvailable,
-  onDeepAnalyse,
+  onDeepDive,
   onReset,
 }: {
   fileName: string;
@@ -110,7 +110,7 @@ export function ImportFileRail({
   method: 'script' | 'gemini' | null;
   summary: string;
   deepAvailable: boolean;
-  onDeepAnalyse: () => void;
+  onDeepDive: () => void;
   onReset: () => void;
 }) {
   return (
@@ -122,7 +122,7 @@ export function ImportFileRail({
         <div className="flex flex-wrap items-center gap-2">
           <p className="truncate text-sm font-semibold">{fileName}</p>
           <Badge tone={method === 'gemini' ? 'accent' : 'neutral'}>
-            {isParsing ? 'Working' : method === 'gemini' ? 'Gemini' : 'Script'}
+            {isParsing ? 'Working' : method === 'gemini' ? 'Deep Dive' : 'Script'}
           </Badge>
         </div>
         <p className="mt-1 text-xs text-muted">{summary}</p>
@@ -133,11 +133,11 @@ export function ImportFileRail({
             type="button"
             variant="secondary"
             className="px-3 py-1.5 text-xs"
-            onClick={onDeepAnalyse}
+            onClick={onDeepDive}
             isLoading={isParsing}
             disabled={isParsing}
           >
-            Deep analyse
+            Deep Dive
           </Button>
         )}
         <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" onClick={onReset}>

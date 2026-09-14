@@ -162,7 +162,7 @@ export default function ImportPage() {
             method={preview?.method ?? null}
             summary={summary}
             deepAvailable={deepAvailable}
-            onDeepAnalyse={() => void parse(file, 'gemini')}
+            onDeepDive={() => void parse(file, 'gemini')}
             onReset={reset}
           />
 
@@ -182,7 +182,7 @@ export default function ImportPage() {
               {rows.length === 0 ? (
                 <EmptyState
                   title="No meals in the preview"
-                  description="The script could not map this file. If Deep Analyse is available, try that."
+                  description="The script could not map this file. If Deep Dive is available, try that."
                 />
               ) : (
                 <ImportDraftList rows={rows} onChange={updateRow} onRemove={removeRow} />

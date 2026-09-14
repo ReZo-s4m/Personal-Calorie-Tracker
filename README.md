@@ -20,7 +20,7 @@ The browser talks only to Next.js. Next.js proxies `/api` to Express. Express is
 | **Targets** | Daily calories plus protein / carbs / fat, optional goal weight. Versioned by date so past reports use the target that was in force then. |
 | **Weigh-ins** | One reading per calendar day. Saving again that day replaces it. |
 | **Reports** | Daily and weekly totals, macro split, micronutrients, target vs actual, and a downloadable PDF. |
-| **PDF import** | Drop a food-diary PDF, review parsed rows, then commit. A local parser runs first; Gemini only if you ask for Deep Analyse. |
+| **PDF import** | Drop a food-diary PDF, review parsed rows, then commit. A local parser runs first; Gemini only if you ask for Deep Dive. |
 | **Ask AI** | Log, edit, or delete meals, attach a photo or PDF, set a target, or ask for a report in ordinary words. Writes wait for confirmation. |
 
 ---
@@ -33,7 +33,7 @@ The browser talks only to Next.js. Next.js proxies `/api` to Express. Express is
 | API | Node 20, Express 5, TypeScript |
 | Data | PostgreSQL via Prisma 6 (Neon in production) |
 | Auth | JWT bearer tokens, bcrypt password hashes |
-| AI | Gemini for Ask AI, photo extract, and PDF Deep Analyse (optional OpenAI fallback for extract) |
+| AI | Gemini for Ask AI, photo extract, and PDF Deep Dive (optional OpenAI fallback for extract) |
 | Tests | `node:test` (unit + API) and Playwright (e2e) |
 
 AI keys are optional. If they are unset, those endpoints return 503 and the rest of the app still works.
@@ -103,7 +103,7 @@ Base path `/api`. `GET /api/health`, signup, login, and password-reset routes ar
 
 **Imports**
 
-- `GET /api/imports/status` — whether Deep Analyse is configured
+- `GET /api/imports/status` — whether Deep Dive is configured
 - `POST /api/imports/parse` — draft rows from a PDF (writes nothing)
 - `POST /api/imports/commit` — save reviewed rows
 
@@ -166,7 +166,7 @@ Edit `.env`:
 | `DIRECT_URL` | yes | Direct Postgres URI (Prisma migrations) |
 | `JWT_SECRET` | yes | At least 32 characters |
 | `CORS_ORIGIN` | no | Defaults to `http://localhost:3000` |
-| `GEMINI_API_KEY` | no | Ask AI, photo extract, PDF Deep Analyse |
+| `GEMINI_API_KEY` | no | Ask AI, photo extract, PDF Deep Dive |
 | `AI_API_KEY` | no | OpenAI-compatible fallback for photo extract |
 | `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | no | Forgot-password email. Without them, the OTP is printed in the API log. |
 
@@ -255,7 +255,7 @@ Turn **Deployment Protection** off on production, or visitors see Vercel’s log
 - One weigh-in per calendar day; saving again that day replaces it.
 - Micronutrients are an open-ended list of named amounts, not fixed columns.
 - Photo extract and PDF import create drafts. Nothing is written until the user confirms.
-- PDF import tries a local table parser first. Deep Analyse (Gemini) is optional.
+- PDF import tries a local table parser first. Deep Dive (Gemini) is optional.
 - Ask AI can log, edit, and delete meals after confirmation. The frontend never imports backend code; `/api` is the only coupling.
 - The HTTP API still uses `/api/goals` and field names such as `targetWeightKg`. Domain tables are `Target`, `DietEntry`, and `WeighIn`; handlers map between the two.
 - Source (manual / image / chat / pdf) is stored on each meal for the API, but it is not shown in the diary UI.

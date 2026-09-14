@@ -82,6 +82,6 @@ describe('parseDiaryText', () => {
     const result = parseDiaryText('This is a letter to my landlord about the leaking tap.', TODAY);
 
     assert.equal(result.rows.length, 0);
-    assert.ok(result.warnings[0]?.includes('Deep Analyse'));
+    assert.ok(result.warnings[0]?.includes('Deep Dive'));
   });
 });

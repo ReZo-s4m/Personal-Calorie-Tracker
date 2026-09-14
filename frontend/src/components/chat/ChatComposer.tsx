@@ -97,7 +97,7 @@ export function ChatComposer({ isBusy, onSend }: ChatComposerProps) {
             disabled={isBusy}
             aria-label="Attach a photo or PDF"
             onClick={() => fileRef.current?.click()}
-            className="mb-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-sm bg-accent text-on-accent transition-colors hover:bg-accent-hover focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="mb-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-hover focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             <PlusIcon />
           </button>
@@ -125,7 +125,7 @@ export function ChatComposer({ isBusy, onSend }: ChatComposerProps) {
             disabled={!canSend || isBusy}
             aria-label="Send"
             className={cx(
-              'mb-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-sm bg-accent text-on-accent transition-colors hover:bg-accent-hover',
+              'mb-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent transition-colors hover:bg-accent-hover',
               'focus:outline-none focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40',
             )}
           >

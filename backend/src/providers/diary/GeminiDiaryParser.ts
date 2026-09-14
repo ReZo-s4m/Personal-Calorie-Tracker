@@ -12,7 +12,7 @@ import type {
 const MAX_EXTRACTED_CHARS = 40_000;
 const MAX_GEMINI_TOKENS = 8_192;
 
-/** Deep Analyse: hands the whole PDF to the model when the table parser cannot map it. */
+/** Deep Dive: hands the whole PDF to the model when the table parser cannot map it. */
 export class GeminiDiaryParser implements IDiaryParser {
   readonly method: ImportMethod = 'gemini';
 
@@ -38,7 +38,7 @@ export class GeminiDiaryParser implements IDiaryParser {
     try {
       parsed = JSON.parse(raw) as { rows?: unknown; notes?: unknown; warnings?: unknown };
     } catch {
-      throw unprocessable('Gemini returned a reply that was not valid JSON. Try Deep Analyse again.');
+      throw unprocessable('Gemini returned a reply that was not valid JSON. Try Deep Dive again.');
     }
 
     const rows = Array.isArray(parsed.rows)

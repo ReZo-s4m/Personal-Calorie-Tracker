@@ -22,7 +22,7 @@ const CAPABILITIES = [
   },
   {
     title: 'Upload a PDF',
-    body: 'Drop a food-diary table, review parsed rows, then commit. A local parser runs first; Deep Analyse is optional.',
+    body: 'Drop a food-diary table, review parsed rows, then commit. A local parser runs first; Deep Dive is optional.',
   },
   {
     title: 'Ask AI',

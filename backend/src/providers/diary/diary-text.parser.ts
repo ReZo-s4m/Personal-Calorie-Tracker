@@ -167,7 +167,7 @@ export function parseDiaryText(text: string, today: string): ScriptParseResult {
     return {
       rows: [],
       warnings: [
-        'The script could not find a food table in this PDF. Column names may be unusual, or the file may be a scan. Deep Analyse can read layouts the script cannot.',
+        'The script could not find a food table in this PDF. Column names may be unusual, or the file may be a scan. Deep Dive can read layouts the script cannot.',
       ],
       notes: null,
       headerGuess: null,

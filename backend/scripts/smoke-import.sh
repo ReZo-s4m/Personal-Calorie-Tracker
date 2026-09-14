@@ -59,7 +59,7 @@ echo "== an empty commit is rejected =="
 echo -n "  "; curl -s -X POST "$BASE/imports/commit" -H "$AUTH" -H 'Content-Type: application/json' \
   -d "{\"today\":\"$TODAY\",\"rows\":[]}" | pick error.message
 
-echo "== deep analyse without a Gemini key =="
+echo "== deep dive without a Gemini key =="
 # The script path must still work; Gemini is a separate provider.
 echo -n "  status.deepAnalyseAvailable: "
 curl -s "$BASE/imports/status" -H "$AUTH" | pick deepAnalyseAvailable
