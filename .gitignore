@@ -1,0 +1,38 @@
+﻿# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+out/
+
+# Environment files (never commit real secrets; .env.example is the template)
+.env
+.env.local
+.env*.local
+
+# Local SQLite / Prisma artifacts
+*.db
+*.db-journal
+*.sqlite
+backend/prisma/dev.db*
+
+# Uploaded files kept out of version control
+uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Playwright
+test-results/
+playwright-report/
+
+# Personal working notes
+COMMIT_GUIDE.md

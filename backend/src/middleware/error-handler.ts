@@ -1,0 +1,83 @@
+import { Prisma } from '@prisma/client';
+import type { ErrorRequestHandler, RequestHandler } from 'express';
+import { MulterError } from 'multer';
+import { config } from '../config/index.js';
+import { AppError } from '../common/errors.js';
+
+export const notFoundHandler: RequestHandler = (req, res) => {
+  res.status(404).json({
+    error: {
+      code: 'NOT_FOUND',
+      message: `No route matches ${req.method} ${req.originalUrl}.`,
+    },
+  });
+};
+
+export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  if (err instanceof AppError) {
+    if (err.statusCode === 429) {
+      const retryAfter =
+        err.details && typeof err.details === 'object' && 'retryAfterSeconds' in err.details
+          ? Number((err.details as { retryAfterSeconds?: number }).retryAfterSeconds)
+          : 60;
+      if (Number.isFinite(retryAfter) && retryAfter > 0) {
+        res.setHeader('Retry-After', String(Math.ceil(retryAfter)));
+      }
+    }
+
+    res.status(err.statusCode).json({
+      error: { code: err.code, message: err.message, details: err.details },
+    });
+    return;
+  }
+
+  if (err instanceof MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'The uploaded file is too large.'
+        : `Upload rejected: ${err.message}.`;
+
+    res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({
+      error: { code: err.code, message },
+    });
+    return;
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === 'P2002') {
+      res.status(409).json({
+        error: { code: 'CONFLICT', message: 'A record with these values already exists.' },
+      });
+      return;
+    }
+
+    if (err.code === 'P2025') {
+      res.status(404).json({
+        error: { code: 'NOT_FOUND', message: 'The requested record was not found.' },
+      });
+      return;
+    }
+
+    if (err.code === 'P2024') {
+      res.status(503).json({
+        error: {
+          code: 'DATABASE_UNAVAILABLE',
+          message: 'The database is busy. Please try again in a moment.',
+        },
+      });
+      return;
+    }
+  }
+
+  console.error('Unhandled error:', err);
+
+  res.status(500).json({
+    error: {
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Something went wrong. Please try again.',
+      ...(config.isProduction
+        ? {}
+        : { details: err instanceof Error ? err.message : String(err) }),
+    },
+  });
+};

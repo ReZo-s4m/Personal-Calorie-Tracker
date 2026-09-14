@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  targets     Target[]
+  dietEntries DietEntry[]
+  weighIns    WeighIn[]
+}
+
+/// Targets are versioned by effectiveFrom. Same-day save replaces in the service.
+model Target {
+  id            String   @id @default(cuid())
+  userId        String
+  dailyCalories Float
+  proteinGrams  Float
+  carbGrams     Float
+  fatGrams      Float
+  weightKg      Float?
+  effectiveFrom DateTime
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveFrom])
+}
+
+/// One weigh-in per calendar day. Saving again that day replaces the row.
+model WeighIn {
+  id        String   @id @default(cuid())
+  userId    String
+  kg        Float
+  /// Midnight UTC of the eater's calendar day.
+  loggedOn  DateTime
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, loggedOn])
+  @@index([userId, loggedOn])
+}
+
+model DietEntry {
+  id           String @id @default(cuid())
+  userId       String
+  mealType     String
+  foodName     String
+  quantity     Float
+  unit         String
+  calories     Float
+  proteinGrams Float  @default(0)
+  carbGrams    Float  @default(0)
+  fatGrams     Float  @default(0)
+
+  consumedAt DateTime
+  /// Midnight UTC of consumedOn, so daily totals are a plain GROUP BY.
+  consumedOn DateTime
+  /// manual | image | pdf | chat
+  source     String   @default("manual")
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  micronutrients DietNutrient[]
+
+  @@index([userId, consumedOn])
+  @@index([userId, mealType])
+}
+
+/// Micros as rows so a new nutrient does not need a migration.
+model DietNutrient {
+  id       String @id @default(cuid())
+  entryId  String
+  nutrient String
+  amount   Float
+  unit     String
+
+  entry DietEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, nutrient])
+  @@index([nutrient])
+}
