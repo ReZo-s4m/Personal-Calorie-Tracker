@@ -24,3 +24,27 @@ export interface AuthResponse {
   user: PublicUser;
   token: string;
 }
+
+/** Wire in: start a reset. Always answered the same way. */
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+/** Wire in: check the email OTP without consuming it. */
+export interface VerifyOtpRequest {
+  email: string;
+  code: string;
+}
+
+/** Wire in: check the OTP again and write a new passwordHash. */
+export interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  password: string;
+  confirmPassword: string;
+}
+
+/** Wire out: forgot / verify / reset succeeded. Never carries a code or token. */
+export interface OkResponse {
+  ok: true;
+}

@@ -1,13 +1,21 @@
-﻿import { config } from './config/index.js';
+import { config } from './config/index.js';
 import { SystemClock, type IClock } from './common/clock.js';
 import { prisma } from './common/prisma.js';
 import type { ITokenLogic } from './common/security/ITokenLogic.js';
 import { JwtTokenLogic } from './common/security/JwtTokenLogic.js';
+import { ConsoleEmailLogic } from './common/email/ConsoleEmailLogic.js';
+import type { IEmailLogic } from './common/email/IEmailLogic.js';
 import { createAuthenticate } from './middleware/auth.js';
-import { geminiChatProvider, geminiDocumentProvider, visionChatProvider } from './providers/ai/index.js';
+
+import {
+  geminiChatProvider,
+  geminiDocumentProvider,
+  visionChatProvider,
+} from './providers/ai/index.js';
 import { DiaryParsers } from './providers/diary/DiaryParsers.js';
 import { GeminiDiaryParser } from './providers/diary/GeminiDiaryParser.js';
 import { ScriptDiaryParser } from './providers/diary/ScriptDiaryParser.js';
+
 import { AiHandler } from './modules/ai/AiHandler.js';
 import { ExtractLogic } from './modules/ai/ExtractLogic.js';
 import type { IExtractLogic } from './modules/ai/IExtractLogic.js';
@@ -37,12 +45,12 @@ import { UpdateEntryTool } from './modules/chat/tools/UpdateEntryTool.js';
 import { EntriesHandler } from './modules/entries/EntriesHandler.js';
 import { EntriesLogic } from './modules/entries/EntriesLogic.js';
 import type { IEntriesLogic } from './modules/entries/IEntriesLogic.js';
-import { ImportsHandler } from './modules/imports/ImportsHandler.js';
-import { ImportsLogic } from './modules/imports/ImportsLogic.js';
-import type { IImportsLogic } from './modules/imports/IImportsLogic.js';
 import { TargetsHandler } from './modules/targets/TargetsHandler.js';
 import { TargetsLogic } from './modules/targets/TargetsLogic.js';
 import type { ITargetsLogic } from './modules/targets/ITargetsLogic.js';
+import { ImportsHandler } from './modules/imports/ImportsHandler.js';
+import { ImportsLogic } from './modules/imports/ImportsLogic.js';
+import type { IImportsLogic } from './modules/imports/IImportsLogic.js';
 import { ReportPdfLogic } from './modules/reports/ReportPdfLogic.js';
 import { ReportsHandler } from './modules/reports/ReportsHandler.js';
 import { ReportsLogic } from './modules/reports/ReportsLogic.js';
@@ -52,8 +60,18 @@ import { WeightsHandler } from './modules/weights/WeightsHandler.js';
 import { WeightsLogic } from './modules/weights/WeightsLogic.js';
 import type { IWeightsLogic } from './modules/weights/IWeightsLogic.js';
 
+/**
+ * The composition root. Node has no component scan, so the whole object graph
+ * is wired here, once, and nowhere else. Every logic class receives its
+ * collaborators through its constructor and never reaches for a singleton.
+ */
+
+// ---- infrastructure ----------------------------------------------------
 export const clock: IClock = new SystemClock();
 export const tokenLogic: ITokenLogic = new JwtTokenLogic(config.jwt);
+export const emailLogic: IEmailLogic = new ConsoleEmailLogic();
+
+/** Bearer-token filter, applied where routers are mounted. */
 export const authenticate = createAuthenticate(tokenLogic);
 
 export const diaryParsers = new DiaryParsers([
@@ -61,7 +79,8 @@ export const diaryParsers = new DiaryParsers([
   new GeminiDiaryParser(geminiDocumentProvider),
 ]);
 
-export const authLogic: IAuthLogic = new AuthLogic(prisma, tokenLogic);
+// ---- domain logic ------------------------------------------------------
+export const authLogic: IAuthLogic = new AuthLogic(prisma, tokenLogic, emailLogic);
 export const entriesLogic: IEntriesLogic = new EntriesLogic(prisma, clock);
 export const targetsLogic: ITargetsLogic = new TargetsLogic(prisma, clock);
 export const weightsLogic: IWeightsLogic = new WeightsLogic(prisma, clock);
@@ -73,6 +92,8 @@ export const reportPdfLogic: IReportPdfLogic = new ReportPdfLogic(
 );
 export const importsLogic: IImportsLogic = new ImportsLogic(entriesLogic, diaryParsers);
 export const extractLogic: IExtractLogic = new ExtractLogic(visionChatProvider, config.ai);
+
+// ---- assistant ---------------------------------------------------------
 export const recommendLogic: IRecommendLogic = new RecommendLogic(
   entriesLogic,
   targetsLogic,
@@ -109,11 +130,12 @@ export const chatLogic: IChatLogic = new ChatLogic(
   authLogic,
 );
 
+// ---- HTTP handlers -----------------------------------------------------
 export const aiHandler = new AiHandler(extractLogic, geminiChatProvider);
 export const authHandler = new AuthHandler(authLogic, authenticate);
 export const chatHandler = new ChatHandler(chatLogic);
 export const entriesHandler = new EntriesHandler(entriesLogic);
 export const targetsHandler = new TargetsHandler(targetsLogic, clock);
 export const importsHandler = new ImportsHandler(importsLogic);
-export const weightsHandler = new WeightsHandler(weightsLogic);
 export const reportsHandler = new ReportsHandler(reportsLogic, reportPdfLogic);
+export const weightsHandler = new WeightsHandler(weightsLogic);

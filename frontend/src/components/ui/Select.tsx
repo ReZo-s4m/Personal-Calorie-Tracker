@@ -46,7 +46,9 @@ export function Select({
   quiet,
 }: SelectHTMLAttributes<HTMLSelectElement> & { hasError?: boolean; quiet?: boolean }) {
   const options = readOptions(children);
-  const selected = options.find((option) => option.value === String(value ?? '')) ?? options[0];
+  const valueKey = String(value ?? '');
+  const matched = options.find((option) => option.value === valueKey);
+  const selected = matched ?? (valueKey === '' ? options[0] : undefined);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();

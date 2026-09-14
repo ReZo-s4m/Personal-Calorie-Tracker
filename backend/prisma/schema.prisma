@@ -16,9 +16,24 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  targets     Target[]
-  dietEntries DietEntry[]
-  weighIns    WeighIn[]
+  targets        Target[]
+  dietEntries    DietEntry[]
+  weighIns       WeighIn[]
+  passwordResets PasswordReset[]
+}
+
+/// One-time email OTP for a password reset. The code is stored hashed.
+model PasswordReset {
+  id         String    @id @default(cuid())
+  userId     String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 /// Targets are versioned by effectiveFrom. Same-day save replaces in the service.

@@ -132,6 +132,14 @@ export function AuthForm({ mode }: AuthFormProps) {
             </div>
           </Field>
 
+          {!isSignup && (
+            <p className="-mt-1 text-sm">
+              <Link href="/forgot-password" className="font-medium text-accent hover:underline">
+                Forgot password?
+              </Link>
+            </p>
+          )}
+
           <Button type="submit" isLoading={isSubmitting} className="mt-1 h-11 w-full">
             {isSignup ? 'Create account' : 'Sign in'}
           </Button>

@@ -4,8 +4,20 @@ import { requireUser } from '../../middleware/auth.js';
 import { rateLimit } from '../../middleware/rate-limit.js';
 import { handleValidation, validatedBody } from '../../middleware/validate.js';
 import type { IAuthLogic } from './IAuthLogic.js';
-import type { LoginRequest, SignupRequest } from './models/auth.models.js';
-import { loginRules, signupRules } from './auth.rules.js';
+import type {
+  ForgotPasswordRequest,
+  LoginRequest,
+  ResetPasswordRequest,
+  SignupRequest,
+  VerifyOtpRequest,
+} from './models/auth.models.js';
+import {
+  forgotPasswordRules,
+  loginRules,
+  resetPasswordRules,
+  signupRules,
+  verifyOtpRules,
+} from './auth.rules.js';
 
 export class AuthHandler {
   constructor(
@@ -19,6 +31,27 @@ export class AuthHandler {
 
     router.post('/signup', attemptLimit, signupRules, handleValidation, asyncHandler(this.signup));
     router.post('/login', attemptLimit, loginRules, handleValidation, asyncHandler(this.login));
+    router.post(
+      '/forgot-password',
+      attemptLimit,
+      forgotPasswordRules,
+      handleValidation,
+      asyncHandler(this.forgotPassword),
+    );
+    router.post(
+      '/verify-otp',
+      attemptLimit,
+      verifyOtpRules,
+      handleValidation,
+      asyncHandler(this.verifyOtp),
+    );
+    router.post(
+      '/reset-password',
+      attemptLimit,
+      resetPasswordRules,
+      handleValidation,
+      asyncHandler(this.resetPassword),
+    );
     router.get('/me', this.authenticate, asyncHandler(this.me));
 
     return router;
@@ -30,6 +63,18 @@ export class AuthHandler {
 
   private login = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.authLogic.login(validatedBody<LoginRequest>(req)));
+  };
+
+  private forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.authLogic.forgotPassword(validatedBody<ForgotPasswordRequest>(req)));
+  };
+
+  private verifyOtp = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.authLogic.verifyOtp(validatedBody<VerifyOtpRequest>(req)));
+  };
+
+  private resetPassword = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.authLogic.resetPassword(validatedBody<ResetPasswordRequest>(req)));
   };
 
   private me = async (req: Request, res: Response): Promise<void> => {

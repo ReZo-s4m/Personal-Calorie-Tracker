@@ -8,13 +8,15 @@ const emailField = body('email')
   .withMessage('Enter a valid email address.')
   .normalizeEmail({ gmail_remove_dots: false });
 
+const passwordField = body('password')
+  .isString()
+  .withMessage('Password is required.')
+  .isLength({ min: 8, max: 128 })
+  .withMessage('Password must be between 8 and 128 characters.');
+
 export const signupRules = [
   emailField,
-  body('password')
-    .isString()
-    .withMessage('Password is required.')
-    .isLength({ min: 8, max: 128 })
-    .withMessage('Password must be between 8 and 128 characters.'),
+  passwordField,
   body('displayName')
     .trim()
     .notEmpty()
@@ -26,4 +28,24 @@ export const signupRules = [
 export const loginRules = [
   emailField,
   body('password').isString().notEmpty().withMessage('Password is required.'),
+];
+
+export const forgotPasswordRules = [emailField];
+
+const otpCodeField = body('code')
+  .trim()
+  .matches(/^\d{6}$/)
+  .withMessage('Enter the 6-digit code.');
+
+export const verifyOtpRules = [emailField, otpCodeField];
+
+export const resetPasswordRules = [
+  emailField,
+  otpCodeField,
+  passwordField,
+  body('confirmPassword')
+    .isString()
+    .withMessage('Confirm your password.')
+    .custom((value, { req }) => value === req.body.password)
+    .withMessage('Passwords do not match.'),
 ];

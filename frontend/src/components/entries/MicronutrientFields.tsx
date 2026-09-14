@@ -2,7 +2,16 @@
 
 import { useState } from 'react';
 import { Button, Input, Select } from '@/components/ui';
-import { MICRONUTRIENT_KEYS, MICRONUTRIENTS, type Micronutrient } from '@/lib/types';
+import {
+  MICRONUTRIENT_KEYS,
+  MICRONUTRIENTS,
+  type Micronutrient,
+  type MicronutrientKey,
+} from '@/lib/types';
+
+function selectedUnusedKey(unused: MicronutrientKey[], current: string): string {
+  return unused.some((key) => key === current) ? current : (unused[0] ?? '');
+}
 
 export function MicronutrientFields({
   idPrefix,
@@ -14,25 +23,30 @@ export function MicronutrientFields({
   onChange: (next: Micronutrient[]) => void;
 }) {
   const unused = MICRONUTRIENT_KEYS.filter((key) => !value.some((item) => item.nutrient === key));
-  const [draftKey, setDraftKey] = useState<string>(unused[0] ?? '');
+  const [draftKey, setDraftKey] = useState<string>(() => unused[0] ?? '');
   const [draftAmount, setDraftAmount] = useState('');
+  const selectedKey = selectedUnusedKey(unused, draftKey);
+
+  if (selectedKey !== draftKey) {
+    setDraftKey(selectedKey);
+  }
 
   function addNutrient() {
-    if (!draftKey || draftAmount.trim() === '') {
+    if (!selectedKey || draftAmount.trim() === '') {
       return;
     }
 
-    const meta = MICRONUTRIENTS[draftKey as keyof typeof MICRONUTRIENTS];
+    const meta = MICRONUTRIENTS[selectedKey as MicronutrientKey];
     if (!meta) {
       return;
     }
 
     onChange([
-      ...value.filter((item) => item.nutrient !== draftKey),
-      { nutrient: draftKey, label: meta.label, amount: Number(draftAmount), unit: meta.unit },
+      ...value.filter((item) => item.nutrient !== selectedKey),
+      { nutrient: selectedKey, label: meta.label, amount: Number(draftAmount), unit: meta.unit },
     ]);
 
-    const remaining = unused.filter((key) => key !== draftKey);
+    const remaining = unused.filter((key) => key !== selectedKey);
     setDraftKey(remaining[0] ?? '');
     setDraftAmount('');
   }
@@ -84,7 +98,7 @@ export function MicronutrientFields({
         <div className="grid grid-cols-[1fr_5.5rem_auto] items-center gap-2">
           <Select
             id={`${idPrefix}-add-nutrient`}
-            value={draftKey}
+            value={selectedKey}
             onChange={(event) => setDraftKey(event.target.value)}
           >
             {unused.map((key) => (

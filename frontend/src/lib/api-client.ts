@@ -222,6 +222,16 @@ export const api = {
       request<AuthResponse>('/auth/signup', { method: 'POST', body }),
     login: (body: { email: string; password: string }) =>
       request<AuthResponse>('/auth/login', { method: 'POST', body }),
+    forgotPassword: (body: { email: string }) =>
+      request<{ ok: true }>('/auth/forgot-password', { method: 'POST', body }),
+    verifyOtp: (body: { email: string; code: string }) =>
+      request<{ ok: true }>('/auth/verify-otp', { method: 'POST', body }),
+    resetPassword: (body: {
+      email: string;
+      code: string;
+      password: string;
+      confirmPassword: string;
+    }) => request<{ ok: true }>('/auth/reset-password', { method: 'POST', body }),
     me: () => request<{ user: User }>('/auth/me'),
   },
 
