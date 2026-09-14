@@ -6,6 +6,7 @@ import {
   authenticate,
   entriesHandler,
   targetsHandler,
+  reportsHandler,
   weightsHandler,
 } from '../container.js';
 
@@ -21,6 +22,7 @@ apiRouter.use('/auth', authHandler.routes());
 apiRouter.use('/entries', authenticate, entriesHandler.routes());
 apiRouter.use('/goals', authenticate, targetsHandler.routes());
 apiRouter.use('/weights', authenticate, weightsHandler.routes());
+apiRouter.use('/reports', authenticate, reportsHandler.routes());
 
 apiRouter.use(
   '/ai',
