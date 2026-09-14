@@ -145,7 +145,7 @@ export function EntryForm({
           amount: item.amount,
           unit: item.unit,
         })),
-        source: fromPhoto ? 'image' : 'manual',
+        source: fromPhoto ? ('image' as const) : ('manual' as const),
       };
 
       const saved = entry
