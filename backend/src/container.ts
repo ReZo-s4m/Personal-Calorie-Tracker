@@ -13,6 +13,9 @@ import type { IEntriesLogic } from './modules/entries/IEntriesLogic.js';
 import { TargetsHandler } from './modules/targets/TargetsHandler.js';
 import { TargetsLogic } from './modules/targets/TargetsLogic.js';
 import type { ITargetsLogic } from './modules/targets/ITargetsLogic.js';
+import { WeightsHandler } from './modules/weights/WeightsHandler.js';
+import { WeightsLogic } from './modules/weights/WeightsLogic.js';
+import type { IWeightsLogic } from './modules/weights/IWeightsLogic.js';
 
 export const clock: IClock = new SystemClock();
 export const tokenLogic: ITokenLogic = new JwtTokenLogic(config.jwt);
@@ -21,7 +24,9 @@ export const authenticate = createAuthenticate(tokenLogic);
 export const authLogic: IAuthLogic = new AuthLogic(prisma, tokenLogic);
 export const entriesLogic: IEntriesLogic = new EntriesLogic(prisma, clock);
 export const targetsLogic: ITargetsLogic = new TargetsLogic(prisma, clock);
+export const weightsLogic: IWeightsLogic = new WeightsLogic(prisma, clock);
 
 export const authHandler = new AuthHandler(authLogic, authenticate);
 export const entriesHandler = new EntriesHandler(entriesLogic);
 export const targetsHandler = new TargetsHandler(targetsLogic, clock);
+export const weightsHandler = new WeightsHandler(weightsLogic);
