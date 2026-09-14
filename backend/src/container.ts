@@ -14,6 +14,7 @@ import type { IExtractLogic } from './modules/ai/IExtractLogic.js';
 import { AuthHandler } from './modules/auth/AuthHandler.js';
 import { AuthLogic } from './modules/auth/AuthLogic.js';
 import type { IAuthLogic } from './modules/auth/IAuthLogic.js';
+import { AttachmentsLogic } from './modules/chat/attachments/AttachmentsLogic.js';
 import { PendingLogic } from './modules/chat/pending/PendingLogic.js';
 import { RecommendLogic } from './modules/chat/recommend/RecommendLogic.js';
 import type { IRecommendLogic } from './modules/chat/recommend/IRecommendLogic.js';
@@ -89,6 +90,13 @@ export const chatTools = new ChatTools([
   new GenerateReportPdfTool(reportPdfLogic),
   new RecommendMealTool(recommendLogic),
 ]);
+
+export const attachmentsLogic = new AttachmentsLogic(
+  extractLogic,
+  importsLogic,
+  entriesLogic,
+  geminiChatProvider,
+);
 
 export const aiHandler = new AiHandler(extractLogic, geminiChatProvider);
 export const authHandler = new AuthHandler(authLogic, authenticate);
