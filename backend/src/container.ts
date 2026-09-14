@@ -14,6 +14,7 @@ import type { IExtractLogic } from './modules/ai/IExtractLogic.js';
 import { AuthHandler } from './modules/auth/AuthHandler.js';
 import { AuthLogic } from './modules/auth/AuthLogic.js';
 import type { IAuthLogic } from './modules/auth/IAuthLogic.js';
+import { PendingLogic } from './modules/chat/pending/PendingLogic.js';
 import { RecommendLogic } from './modules/chat/recommend/RecommendLogic.js';
 import type { IRecommendLogic } from './modules/chat/recommend/IRecommendLogic.js';
 import { EntriesHandler } from './modules/entries/EntriesHandler.js';
@@ -59,6 +60,7 @@ export const recommendLogic: IRecommendLogic = new RecommendLogic(
   entriesLogic,
   targetsLogic,
 );
+export const pendingLogic = new PendingLogic(entriesLogic);
 
 export const aiHandler = new AiHandler(extractLogic, geminiChatProvider);
 export const authHandler = new AuthHandler(authLogic, authenticate);
