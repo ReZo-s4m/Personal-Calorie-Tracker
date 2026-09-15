@@ -148,7 +148,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(
       response.status,
       error?.code ?? 'UNKNOWN',
-      error?.message ?? 'Something went wrong.',
+      error?.message ??
+        (response.status >= 500
+          ? 'The API is unavailable. Try again in a moment.'
+          : 'Something went wrong.'),
       fieldErrors,
     );
   }

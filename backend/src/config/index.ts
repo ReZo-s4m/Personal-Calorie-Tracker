@@ -54,7 +54,11 @@ if (jwtSecret && jwtSecret.length < 32) {
 }
 
 const databaseUrl = required('DATABASE_URL');
-const directUrl = optional('DIRECT_URL', '');
+const directUrl = optional('DIRECT_URL', databaseUrl);
+
+if (!process.env.DIRECT_URL?.trim() && databaseUrl) {
+  process.env.DIRECT_URL = databaseUrl;
+}
 
 if (databaseUrl && !/^postgres(ql)?:\/\//i.test(databaseUrl)) {
   problems.push(
