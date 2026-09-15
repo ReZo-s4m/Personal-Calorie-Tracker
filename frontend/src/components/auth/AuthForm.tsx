@@ -10,10 +10,9 @@ import { Alert, Button, Field, Input } from '@/components/ui';
 
 interface AuthFormProps {
   mode: 'login' | 'signup';
-  passwordUpdated?: boolean;
 }
 
-export function AuthForm({ mode, passwordUpdated = false }: AuthFormProps) {
+export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const { login, signup, user, isLoading } = useAuth();
   const isSignup = mode === 'signup';
@@ -75,9 +74,6 @@ export function AuthForm({ mode, passwordUpdated = false }: AuthFormProps) {
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="mt-7 flex flex-col gap-4">
-          {passwordUpdated && !bannerError && (
-            <Alert tone="info">Password updated. Sign in with the new one.</Alert>
-          )}
           {bannerError && <Alert>{bannerError}</Alert>}
 
           {isSignup && (
@@ -135,14 +131,6 @@ export function AuthForm({ mode, passwordUpdated = false }: AuthFormProps) {
               </button>
             </div>
           </Field>
-
-          {!isSignup && (
-            <p className="-mt-1 text-sm">
-              <Link href="/forgot-password" className="font-medium text-accent hover:underline">
-                Forgot password?
-              </Link>
-            </p>
-          )}
 
           <Button type="submit" isLoading={isSubmitting} className="mt-1 h-11 w-full">
             {isSignup ? 'Create account' : 'Sign in'}
