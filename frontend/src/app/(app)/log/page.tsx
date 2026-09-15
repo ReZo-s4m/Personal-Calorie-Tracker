@@ -56,7 +56,7 @@ export default function LogMealPage() {
             <span>Saved. Keep going or review the day.</span>
             <Link href="/dashboard">
               <Button variant="secondary" className="px-2 py-1 text-xs">
-                View today
+                View overview
               </Button>
             </Link>
           </div>
