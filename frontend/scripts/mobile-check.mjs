@@ -3,27 +3,84 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, devices } from '@playwright/test';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = path.join(__dirname, '../e2e/screenshots/mobile');
-const WEB_URL = process.env.WEB_URL ?? 'http://localhost:3000';
-const API_URL = process.env.API_URL ?? 'http://localhost:4000/api';
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-function todayKey(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+const settings = {
+  screenshotDir: path.join(rootDir, '../e2e/screenshots/mobile'),
+  webBase: process.env.WEB_URL ?? 'http://localhost:3000',
+  apiBase: process.env.API_URL ?? 'http://localhost:4000/api',
+  device: devices['iPhone 14'],
+  password: 'DemoPass123',
+  displayName: 'user',
+  signupRetries: 4,
+  retryBaseMs: 4000,
+  settlePublicMs: 300,
+  settleAuthMs: 400,
+};
+
+const seedGoals = {
+  dailyCalories: 1950,
+  proteinGrams: 125,
+  carbGrams: 190,
+  fatGrams: 60,
+  targetWeightKg: 72,
+};
+
+const seedEntry = {
+  foodName: 'Egg toast',
+  mealType: 'breakfast',
+  quantity: 1,
+  unit: 'plate',
+  calories: 360,
+  proteinGrams: 17,
+  carbGrams: 30,
+  fatGrams: 15,
+};
+
+const seedWeight = {
+  kg: 71.4,
+  note: 'Weekly check-in',
+};
+
+const publicPages = [
+  ['01-landing', '/'],
+  ['02-login', '/login'],
+  ['03-signup', '/signup'],
+];
+
+const authPages = [
+  ['04-today', '/dashboard'],
+  ['05-log', '/log'],
+  ['06-entries', '/entries'],
+  ['07-goals', '/goals'],
+  ['08-weight', '/weight'],
+  ['09-reports', '/reports'],
+  ['10-chat', '/chat'],
+  ['11-import', '/import'],
+];
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-async function api(pathname, { method = 'GET', token, body } = {}) {
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function callApi(pathname, { method = 'GET', token, body } = {}) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const response = await fetch(`${API_URL}${pathname}`, {
+
+  const response = await fetch(`${settings.apiBase}${pathname}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
   if (!response.ok) {
@@ -32,117 +89,111 @@ async function api(pathname, { method = 'GET', token, body } = {}) {
   return data;
 }
 
-async function seedAccount() {
-  const email = `mobile.${Date.now()}@example.com`;
+async function createSeededUser() {
+  const email = `mobile.user.${Date.now()}@example.com`;
+  const today = localDateKey();
   let lastError;
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
+
+  for (let attempt = 1; attempt <= settings.signupRetries; attempt += 1) {
     try {
-      const { token } = await api('/auth/signup', {
+      const { token } = await callApi('/auth/signup', {
         method: 'POST',
-        body: { email, password: 'password123', displayName: 'Aishwarya' },
+        body: {
+          email,
+          password: settings.password,
+          displayName: settings.displayName,
+        },
       });
-      const today = todayKey();
-      await api('/goals', {
+
+      await callApi('/goals', {
         method: 'POST',
         token,
         body: {
-          dailyCalories: 2200,
-          proteinGrams: 140,
-          carbGrams: 220,
-          fatGrams: 70,
-          targetWeightKg: 62,
+          ...seedGoals,
           effectiveFrom: today,
         },
       });
-      await api('/entries', {
+
+      await callApi('/entries', {
         method: 'POST',
         token,
         body: {
-          foodName: 'Oatmeal with berries',
-          mealType: 'breakfast',
-          quantity: 1,
-          unit: 'bowl',
-          calories: 420,
-          proteinGrams: 14,
-          carbGrams: 68,
-          fatGrams: 9,
+          ...seedEntry,
           consumedOn: today,
         },
       });
-      await api('/weights', {
+
+      await callApi('/weights', {
         method: 'POST',
         token,
-        body: { kg: 62.4, loggedOn: today, note: 'Morning' },
+        body: {
+          ...seedWeight,
+          loggedOn: today,
+        },
       });
+
       return token;
     } catch (error) {
       lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 4000 * attempt));
+      await sleep(settings.retryBaseMs * attempt);
     }
   }
+
   throw lastError;
 }
 
-async function shot(page, name) {
-  await page.addStyleTag({
-    content: 'nextjs-portal,[data-next-badge-root]{display:none!important}',
-  }).catch(() => {});
-  const file = path.join(OUT_DIR, `${name}.png`);
+async function hideNextBadge(page) {
+  await page
+    .addStyleTag({
+      content: 'nextjs-portal,[data-next-badge-root]{display:none!important}',
+    })
+    .catch(() => {});
+}
+
+async function saveShot(page, name) {
+  await hideNextBadge(page);
+  const file = path.join(settings.screenshotDir, `${name}.png`);
   await page.screenshot({ path: file, fullPage: false });
   console.log(`wrote ${path.relative(process.cwd(), file)}`);
 }
 
-async function main() {
-  await mkdir(OUT_DIR, { recursive: true });
+async function capturePage(page, name, route, { waitForHeading = false } = {}) {
+  await page.goto(`${settings.webBase}${route}`, { waitUntil: 'networkidle' });
+  if (waitForHeading) {
+    await page.locator('h1').first().waitFor();
+  }
+  await sleep(waitForHeading ? settings.settleAuthMs : settings.settlePublicMs);
+  await saveShot(page, name);
+}
+
+async function run() {
+  await mkdir(settings.screenshotDir, { recursive: true });
+
   const browser = await chromium.launch();
-  const context = await browser.newContext({
-    ...devices['iPhone 14'],
-  });
+  const context = await browser.newContext({ ...settings.device });
   const page = await context.newPage();
 
-  await page.goto(`${WEB_URL}/`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(400);
-  await shot(page, '01-landing');
+  for (const [name, route] of publicPages) {
+    await capturePage(page, name, route);
+  }
 
-  await page.goto(`${WEB_URL}/login`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
-  await shot(page, '02-login');
-
-  await page.goto(`${WEB_URL}/signup`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(300);
-  await shot(page, '03-signup');
-
-  const token = await seedAccount();
+  const token = await createSeededUser();
   await page.addInitScript((value) => {
     window.localStorage.setItem('calorie-tracker.token', value);
   }, token);
 
-  const routes = [
-    ['04-today', '/dashboard'],
-    ['05-log', '/log'],
-    ['06-entries', '/entries'],
-    ['07-goals', '/goals'],
-    ['08-weight', '/weight'],
-    ['09-reports', '/reports'],
-    ['10-chat', '/chat'],
-    ['11-import', '/import'],
-  ];
-
-  for (const [name, url] of routes) {
-    await page.goto(`${WEB_URL}${url}`, { waitUntil: 'networkidle' });
-    await page.locator('h1').first().waitFor();
-    await page.waitForTimeout(400);
-    await shot(page, name);
+  for (const [name, route] of authPages) {
+    await capturePage(page, name, route, { waitForHeading: true });
   }
 
   await page.getByRole('button', { name: 'More' }).click();
-  await page.waitForTimeout(300);
-  await shot(page, '12-more');
+  await sleep(settings.settlePublicMs);
+  await saveShot(page, '12-more');
 
   await browser.close();
 }
 
-main().catch((error) => {
+run().catch((error) => {
   console.error(error);
   process.exit(1);
 });

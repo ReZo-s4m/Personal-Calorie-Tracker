@@ -3,23 +3,115 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = path.join(__dirname, '../e2e/screenshots');
-const WEB_URL = process.env.WEB_URL ?? 'http://localhost:3000';
-const API_URL = process.env.API_URL ?? 'http://localhost:4000/api';
-const VIEWPORT = { width: 1440, height: 900 };
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-function todayKey(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+const settings = {
+  screenshotDir: path.join(rootDir, '../e2e/screenshots'),
+  webBase: process.env.WEB_URL ?? 'http://localhost:3000',
+  apiBase: process.env.API_URL ?? 'http://localhost:4000/api',
+  viewport: { width: 1440, height: 900 },
+  password: 'DemoPass123',
+  displayName: 'user',
+  settleMs: 400,
+  importTimeoutMs: 20_000,
+};
+
+const seedGoals = {
+  dailyCalories: 1950,
+  proteinGrams: 125,
+  carbGrams: 190,
+  fatGrams: 60,
+  targetWeightKg: 72,
+};
+
+const seedMeals = [
+  {
+    daysAgo: 0,
+    foodName: 'Egg toast',
+    mealType: 'breakfast',
+    quantity: 1,
+    unit: 'plate',
+    calories: 360,
+    proteinGrams: 17,
+    carbGrams: 30,
+    fatGrams: 15,
+  },
+  {
+    daysAgo: 0,
+    foodName: 'Chicken bowl',
+    mealType: 'lunch',
+    quantity: 1,
+    unit: 'bowl',
+    calories: 540,
+    proteinGrams: 38,
+    carbGrams: 52,
+    fatGrams: 17,
+  },
+  {
+    daysAgo: 1,
+    foodName: 'Veg pasta',
+    mealType: 'dinner',
+    quantity: 1,
+    unit: 'plate',
+    calories: 610,
+    proteinGrams: 21,
+    carbGrams: 74,
+    fatGrams: 22,
+  },
+  {
+    daysAgo: 2,
+    foodName: 'Protein shake',
+    mealType: 'snack',
+    quantity: 1,
+    unit: 'serving',
+    calories: 150,
+    proteinGrams: 25,
+    carbGrams: 6,
+    fatGrams: 3,
+  },
+  {
+    daysAgo: 3,
+    foodName: 'Poha',
+    mealType: 'breakfast',
+    quantity: 1,
+    unit: 'bowl',
+    calories: 280,
+    proteinGrams: 8,
+    carbGrams: 46,
+    fatGrams: 7,
+  },
+];
+
+const pages = [
+  ['dashboard', '/dashboard', 'Today'],
+  ['log', '/log', 'Log a Meal'],
+  ['goals', '/goals', 'Set Your Goals'],
+  ['entries', '/entries', 'Entries'],
+  ['reports', '/reports', 'Reports'],
+  ['chat', '/chat', 'Chat support'],
+  ['import-empty', '/import', 'Bulk import'],
+];
+
+const pdfRows = [
+  'Date | Meal | Food | Qty | Unit | Calories | Protein | Carbs | Fat',
+  '2026-08-10 | Breakfast | Egg toast | 1 | plate | 360 | 17 | 30 | 15',
+  '2026-08-11 | Lunch | Chicken bowl | 1 | bowl | 540 | 38 | 52 | 17',
+  '2026-08-12 | Dinner | Veg pasta | 1 | plate | 610 | 21 | 74 | 22',
+  '2026-08-13 | Snacks | Protein shake | 1 | serving | 150 | 25 | 6 | 3',
+  '2026-08-14 | Breakfast | Poha | 1 | bowl | 280 | 8 | 46 | 7',
+];
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function daysAgoKey(days) {
+function dateDaysAgo(days) {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return todayKey(date);
+  return localDateKey(date);
 }
 
 function escapePdfText(text) {
@@ -62,21 +154,21 @@ function buildDiaryPdf(lines) {
   return Buffer.from(pdf);
 }
 
-async function api(pathname, { method = 'GET', token, body, form } = {}) {
+async function callApi(pathname, { method = 'GET', token, body, form } = {}) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  let payload;
+  let init;
   if (form) {
-    payload = { method, headers, body: form };
+    init = { method, headers, body: form };
   } else if (body !== undefined) {
     headers['Content-Type'] = 'application/json';
-    payload = { method, headers, body: JSON.stringify(body) };
+    init = { method, headers, body: JSON.stringify(body) };
   } else {
-    payload = { method, headers };
+    init = { method, headers };
   }
 
-  const response = await fetch(`${API_URL}${pathname}`, payload);
+  const response = await fetch(`${settings.apiBase}${pathname}`, init);
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
   if (!response.ok) {
@@ -85,102 +177,86 @@ async function api(pathname, { method = 'GET', token, body, form } = {}) {
   return data;
 }
 
-async function seedAccount() {
-  const email = `visual.${Date.now()}@example.com`;
-  const { token } = await api('/auth/signup', {
+async function createSeededUser() {
+  const email = `visual.user.${Date.now()}@example.com`;
+  const today = localDateKey();
+
+  const { token } = await callApi('/auth/signup', {
     method: 'POST',
-    body: { email, password: 'password123', displayName: 'Aishwarya' },
+    body: {
+      email,
+      password: settings.password,
+      displayName: settings.displayName,
+    },
   });
 
-  const today = todayKey();
-  await api('/goals', {
+  await callApi('/goals', {
     method: 'POST',
     token,
     body: {
-      dailyCalories: 2200,
-      proteinGrams: 140,
-      carbGrams: 220,
-      fatGrams: 70,
-      targetWeightKg: 62,
+      ...seedGoals,
       effectiveFrom: today,
     },
   });
 
-  const meals = [
-    { daysAgo: 0, foodName: 'Oatmeal with berries', mealType: 'breakfast', quantity: 1, unit: 'bowl', calories: 420, proteinGrams: 14, carbGrams: 68, fatGrams: 9 },
-    { daysAgo: 0, foodName: 'Grilled chicken salad', mealType: 'lunch', quantity: 1, unit: 'plate', calories: 610, proteinGrams: 48, carbGrams: 30, fatGrams: 32 },
-    { daysAgo: 1, foodName: 'Salmon with roasted vegetables', mealType: 'dinner', quantity: 1, unit: 'plate', calories: 720, proteinGrams: 42, carbGrams: 28, fatGrams: 38 },
-    { daysAgo: 2, foodName: 'Greek yogurt', mealType: 'snack', quantity: 170, unit: 'g', calories: 180, proteinGrams: 16, carbGrams: 12, fatGrams: 6 },
-    { daysAgo: 3, foodName: 'Idli sambar', mealType: 'breakfast', quantity: 3, unit: 'pcs', calories: 320, proteinGrams: 12, carbGrams: 54, fatGrams: 4 },
-  ];
-
-  for (const meal of meals) {
+  for (const meal of seedMeals) {
     const { daysAgo, ...entry } = meal;
-    await api('/entries', {
+    await callApi('/entries', {
       method: 'POST',
       token,
-      body: { ...entry, consumedOn: daysAgoKey(daysAgo) },
+      body: {
+        ...entry,
+        consumedOn: dateDaysAgo(daysAgo),
+      },
     });
   }
 
   return token;
 }
 
-async function shot(page, name) {
-  const file = path.join(OUT_DIR, `${name}.png`);
+async function saveShot(page, name) {
+  const file = path.join(settings.screenshotDir, `${name}.png`);
   await page.screenshot({ path: file, fullPage: true });
   console.log(`wrote ${path.relative(process.cwd(), file)}`);
 }
 
-async function main() {
-  await mkdir(OUT_DIR, { recursive: true });
-  const token = await seedAccount();
+async function capturePage(page, name, route, heading) {
+  await page.goto(`${settings.webBase}${route}`, { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: heading }).waitFor();
+  await page.waitForTimeout(settings.settleMs);
+  await saveShot(page, name);
+}
+
+async function run() {
+  await mkdir(settings.screenshotDir, { recursive: true });
+  const token = await createSeededUser();
 
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: VIEWPORT });
+  const page = await browser.newPage({ viewport: settings.viewport });
   await page.addInitScript((value) => {
     window.localStorage.setItem('calorie-tracker.token', value);
   }, token);
 
-  const routes = [
-    ['dashboard', '/dashboard', 'Today'],
-    ['log', '/log', 'Log a Meal'],
-    ['goals', '/goals', 'Set Your Goals'],
-    ['entries', '/entries', 'Entries'],
-    ['reports', '/reports', 'Reports'],
-    ['chat', '/chat', 'Chat support'],
-    ['import-empty', '/import', 'Bulk import'],
-  ];
-
-  for (const [name, url, heading] of routes) {
-    await page.goto(`${WEB_URL}${url}`, { waitUntil: 'networkidle' });
-    await page.getByRole('heading', { name: heading }).waitFor();
-    await page.waitForTimeout(400);
-    await shot(page, name);
+  for (const [name, route, heading] of pages) {
+    await capturePage(page, name, route, heading);
   }
 
-  const pdf = buildDiaryPdf([
-    'Date | Meal | Food | Qty | Unit | Calories | Protein | Carbs | Fat',
-    '2026-08-10 | Breakfast | Oatmeal with berries | 1 | bowl | 420 | 12 | 68 | 9',
-    '2026-08-11 | Lunch | Grilled chicken salad | 1 | plate | 610 | 48 | 30 | 32',
-    '2026-08-12 | Dinner | Salmon with roasted vegetables | 1 | plate | 720 | 42 | 28 | 38',
-    '2026-08-13 | Snacks | Greek yogurt | 170 | g | 180 | 16 | 12 | 6',
-    '2026-08-14 | Breakfast | Idli sambar | 3 | pcs | 320 | 12 | 54 | 4',
-  ]);
-
+  const pdf = buildDiaryPdf(pdfRows);
   await page.locator('#bulk-import-file').setInputFiles({
     name: 'sample_meal_data.pdf',
     mimeType: 'application/pdf',
     buffer: pdf,
   });
-  await page.getByRole('button', { name: /Import \d+ entries/ }).waitFor({ timeout: 20_000 });
+  await page.getByRole('button', { name: /Import \d+ entries/ }).waitFor({
+    timeout: settings.importTimeoutMs,
+  });
   await page.waitForTimeout(500);
-  await shot(page, 'import-review');
+  await saveShot(page, 'import-review');
 
   await browser.close();
 }
 
-main().catch((error) => {
+run().catch((error) => {
   console.error(error);
   process.exit(1);
 });
