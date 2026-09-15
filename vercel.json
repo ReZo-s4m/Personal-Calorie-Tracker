@@ -7,7 +7,14 @@
     "backend": {
       "root": "backend",
       "framework": "express",
-      "entrypoint": "src/index.ts"
+      "entrypoint": "src/index.ts",
+      "installCommand": "npm ci",
+      "buildCommand": "npx prisma generate",
+      "functions": {
+        "src/index.ts": {
+          "includeFiles": "{prisma/**,node_modules/.prisma/**,node_modules/@prisma/client/**}"
+        }
+      }
     }
   },
   "rewrites": [
