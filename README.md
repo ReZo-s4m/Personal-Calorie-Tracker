@@ -1,6 +1,6 @@
 # NutriAI — Personal Calorie Tracker
 
-Live: https://my-nutriai.vercel.app/
+Demo: https://www.youtube.com/watch?v=63pDxJMLNu8 · Live: https://my-nutriai.vercel.app/
 
 A private food diary. Log meals by hand, from a photo, from a PDF, or by asking Ask AI. Set calorie and macro targets, record weigh-ins, and read daily/weekly reports.
 
